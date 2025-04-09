@@ -1,5 +1,6 @@
 import { ApolloServer, UserInputError, gql } from "apollo-server";
 import { v1 as uuid } from "uuid";
+import axios from "axios";
 
 const persons = [
   {
@@ -41,10 +42,6 @@ const typeDefs = gql`
     address: Address!
     id: ID!
   }
-  type Phone {
-    name: String!
-    phone: String
-  }
 
   type Query {
     personCount: Int!
@@ -59,17 +56,22 @@ const typeDefs = gql`
       street: String!
       city: String!
     ): Person
-    editNumber(name: String!, phone: String!): Phone
+    editNumber(name: String!, phone: String!): Person
   }
 `;
 const resolvers = {
   Query: {
     personCount: () => persons.length,
-    allPersons: (root, args) => {
-      if (!args.phone) return persons;
+    allPersons: async (root, args) => {
+      const { data: personsfromrest } = await axios.get(
+        "http://localhost:3000/persons"
+      );
+      console.log(personsfromrest);
+
+      if (!args.phone) return personsfromrest;
       const byPhone = (person) =>
         args.phone === "YES" ? person.phone : !person.phone;
-      return persons.filter(byPhone);
+      return personsfromrest.filter(byPhone);
     },
     findPerson: (root, args) => {
       const { name } = args;
